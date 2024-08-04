@@ -1,17 +1,21 @@
 mod discord;
 mod commands;
+mod voice_handler;
+mod ws_server;
 
 #[macro_use]
 extern crate log;
 
 use std::env;
-
+use std::sync::Arc;
 use fern::colors::{Color, ColoredLevelConfig};
 use serenity::all::ApplicationId;
 use serenity::Client;
 use serenity::prelude::GatewayIntents;
 use songbird::{Config, SerenityInit};
 use songbird::driver::DecodeMode;
+use crate::discord::DiscordData;
+use crate::ws_server::WebsocketServer;
 
 #[tokio::main]
 async fn main() {
@@ -24,7 +28,10 @@ async fn main() {
 
     setup_logger();
 
-    let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
+    let ws_server = Arc::new(WebsocketServer::new().await);
+    let discord_data = DiscordData { ws_server };
+
+    let intents = GatewayIntents::non_privileged();
 
     // Here, we need to configure Songbird to decode all incoming voice packets.
     // If you want, you can do this on a per-call basis---here, we need it to
@@ -35,6 +42,7 @@ async fn main() {
         .event_handler(discord::Events)
         .application_id(app_id)
         .register_songbird_from_config(songbird_config)
+        .type_map_insert::<DiscordData>(discord_data)
         .await
         .expect("Error creating client");
 
@@ -77,9 +85,9 @@ fn setup_logger() {
             ));
         })
         .level(log::LevelFilter::Warn)
-        .level_for("dota_stalker", log::LevelFilter::Debug)
+        .level_for("listener", log::LevelFilter::Trace)
         .chain(std::io::stdout())
-        .chain(fern::log_file("stalker.log").unwrap())
+        .chain(fern::log_file("greenscreen.log").unwrap())
         .apply()
         .unwrap();
 }
