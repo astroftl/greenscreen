@@ -85,7 +85,7 @@ fn setup_logger() {
             ));
         })
         .level(log::LevelFilter::Warn)
-        .level_for("listener", log::LevelFilter::Trace)
+        .level_for("greenscreen", log::LevelFilter::Trace)
         .chain(std::io::stdout());
 
     match fern::log_file("greenscreen.log") {
