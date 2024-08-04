@@ -4,3 +4,4 @@
 /.env
 /compose.yaml
 /README.Docker.md
+/*.log

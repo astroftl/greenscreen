@@ -70,7 +70,7 @@ fn setup_logger() {
         .debug(Color::BrightCyan)
         .trace(Color::Black);
 
-    fern::Dispatch::new()
+    let mut dispatch = fern::Dispatch::new()
         .format(move |out, message, record| {
             out.finish(format_args!(
                 "{color_line}[{date}][{target}][{level}{color_line}] {message}\x1B[0m",
@@ -86,7 +86,18 @@ fn setup_logger() {
         })
         .level(log::LevelFilter::Warn)
         .level_for("listener", log::LevelFilter::Trace)
-        .chain(std::io::stdout())
+        .chain(std::io::stdout());
+
+    match fern::log_file("greenscreen.log") {
+        Ok(logfile) => {
+            dispatch = dispatch.chain(logfile);
+        }
+        Err(e) => {
+            println!("Error setting up logger: {e}")
+        }
+    }
+
+    dispatch
         .chain(fern::log_file("greenscreen.log").unwrap())
         .apply()
         .unwrap();
