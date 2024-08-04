@@ -1,7 +1,4 @@
-ARG RUST_VERSION=nightly
-ARG APP_NAME=greenscreen
-
-FROM rust:${RUST_VERSION}-alpine AS build
+FROM rust:alpine3.20 AS build
 ARG APP_NAME
 WORKDIR /app
 
@@ -14,9 +11,9 @@ RUN --mount=type=bind,source=src,target=src \
     --mount=type=cache,target=/usr/local/cargo/git/db \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
 cargo build --locked --release && \
-cp ./target/release/$APP_NAME /bin/$APP_NAME
+cp ./target/release/greenscreen /bin/greenscreen
 
-FROM alpine:3.18 AS final
+FROM alpine:3.20 AS final
 
 ARG UID=10001
 RUN adduser \
@@ -29,7 +26,7 @@ RUN adduser \
     appuser
 USER appuser
 
-COPY --from=build /bin/$APP_NAME /bin/
+COPY --from=build /bin/greenscreen /bin/
 
 EXPOSE 47336
 
