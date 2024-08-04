@@ -32,7 +32,7 @@ pub async fn run(ctx: &Context, cmd: &CommandInteraction) {
         let channel_name = channel_id.name(ctx).await.unwrap();
 
         let resp = CreateInteractionResponseMessage::new()
-            .content(format!("Joined \"{channel_name}\"\nws = 127.0.0.1:47336"))
+            .content(format!("Joined \"{channel_name}\"\nWebSocket server is available at: ws://greenscreen.ftl.sh/{guild_id}"))
             .ephemeral(true);
 
         cmd.create_response(ctx, CreateInteractionResponse::Message(resp)).await.unwrap();
