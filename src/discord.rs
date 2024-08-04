@@ -14,8 +14,6 @@ pub struct DiscordData {
     pub ws_server: Arc<WebsocketServer>,
 }
 
-pub struct DiscordKey;
-
 impl TypeMapKey for DiscordData {
     type Value = DiscordData;
 }

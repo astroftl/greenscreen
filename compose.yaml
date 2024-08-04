@@ -1,0 +1,7 @@
+services:
+  greenscreen:
+    build:
+      context: .
+      target: final
+    ports:
+      - 47336:47336

@@ -1,9 +1,7 @@
 use std::net::SocketAddr;
-use std::num::ParseIntError;
 use std::str::FromStr;
 use std::sync::Arc;
 use dashmap::DashMap;
-use dashmap::mapref::one::Ref;
 use serde::{Deserialize, Serialize};
 use serenity::model::id::{GuildId, UserId};
 use serenity::futures::{SinkExt, StreamExt};
