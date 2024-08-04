@@ -98,7 +98,6 @@ fn setup_logger() {
     }
 
     dispatch
-        .chain(fern::log_file("greenscreen.log").unwrap())
         .apply()
         .unwrap();
 }
