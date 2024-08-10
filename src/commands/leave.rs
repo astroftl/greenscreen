@@ -15,7 +15,10 @@ pub async fn run(ctx: &Context, cmd: &CommandInteraction) {
 
     if let Some(call) = call {
         let channel_id = ChannelId::from(call.lock().await.current_channel().unwrap().0);
-        let channel_name = channel_id.name(ctx).await.unwrap();
+        let channel_name = channel_id.name(ctx).await.unwrap_or_else(|e| {
+            error!("Error retrieving channel name: {e:?}");
+            String::new()
+        });
 
         call.lock().await.remove_all_global_events();
         if let Err(e) = manager.remove(guild_id).await {
@@ -23,20 +26,26 @@ pub async fn run(ctx: &Context, cmd: &CommandInteraction) {
                 .content(format!("Failed: {e:?}"))
                 .ephemeral(true);
 
-            cmd.create_response(ctx, CreateInteractionResponse::Message(resp)).await.unwrap();
+            cmd.create_response(ctx, CreateInteractionResponse::Message(resp)).await.unwrap_or_else(|e| {
+                error!("Error responding to the interaction: {e:?}");
+            });
         } else {
             let resp = CreateInteractionResponseMessage::new()
                 .content(format!("Left \"{channel_name}\""))
                 .ephemeral(true);
 
-            cmd.create_response(ctx, CreateInteractionResponse::Message(resp)).await.unwrap();
+            cmd.create_response(ctx, CreateInteractionResponse::Message(resp)).await.unwrap_or_else(|e| {
+                error!("Error responding to the interaction: {e:?}");
+            });
         }
     } else {
         let resp = CreateInteractionResponseMessage::new()
             .content("Not in a voice channel!")
             .ephemeral(true);
 
-        cmd.create_response(ctx, CreateInteractionResponse::Message(resp)).await.unwrap();
+        cmd.create_response(ctx, CreateInteractionResponse::Message(resp)).await.unwrap_or_else(|e| {
+            error!("Error responding to the interaction: {e:?}");
+        });
     }
 }
 
