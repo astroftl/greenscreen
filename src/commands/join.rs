@@ -22,9 +22,9 @@ pub async fn run(ctx: &Context, cmd: &CommandInteraction) {
         let mut handler = handler_lock.lock().await;
 
         let ws_serv = ctx.data.read().await.get::<DiscordData>().unwrap().ws_server.clone();
-        let guild_tx = ws_serv.guild_map.get(guild_id);
+        let event_tx  = ws_serv.event_tx.clone();
 
-        let evt_receiver = Receiver::new(guild_tx).await;
+        let evt_receiver = Receiver::new(event_tx, guild_id).await;
 
         handler.add_global_event(CoreEvent::SpeakingStateUpdate.into(), evt_receiver.clone());
         handler.add_global_event(CoreEvent::ClientDisconnect.into(), evt_receiver.clone());

@@ -3,11 +3,10 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use serenity::async_trait;
 use serenity::model::voice_gateway::payload::{ClientDisconnect, Speaking};
-use serenity::model::id::UserId;
+use serenity::model::id::{UserId, GuildId};
 use songbird::{EventContext, EventHandler};
-use tokio::sync::broadcast::Sender;
-use tokio::sync::Mutex;
-use crate::ws_server::EventMessage;
+use tokio::sync::{mpsc, Mutex};
+use crate::ws_server::{EventMessage, VoiceMessage};
 
 #[derive(Clone)]
 pub(crate) struct Receiver {
@@ -17,16 +16,18 @@ pub(crate) struct Receiver {
 struct InnerReceiver {
     known_ssrcs: DashMap<u32, UserId>,
     last_talking: Mutex<HashSet<UserId>>,
-    event_tx: Sender<EventMessage>,
+    event_tx: mpsc::Sender<VoiceMessage>,
+    guild_id: GuildId,
 }
 
 impl Receiver {
-    pub async fn new(event_tx: Sender<EventMessage>) -> Self {
+    pub async fn new(event_tx: mpsc::Sender<VoiceMessage>, guild_id: GuildId) -> Self {
         Self {
             inner: Arc::new(InnerReceiver {
                 known_ssrcs: DashMap::new(),
                 last_talking: Mutex::new(HashSet::new()),
                 event_tx,
+                guild_id,
             }),
         }
     }
@@ -46,7 +47,7 @@ impl EventHandler for Receiver {
                         debug!("Speaking state update: user {user_id:?} has SSRC {ssrc:?}, using {speaking:?}");
 
                         // Ignore the error if there is one, it is not fatal and will occur frequently.
-                        _ = self.inner.event_tx.send(EventMessage::Connected(user));
+                        _ = self.inner.event_tx.send(VoiceMessage { guild: self.inner.guild_id, event: EventMessage::Connected(user) } ).await;
                     }
                 }
             },
@@ -68,18 +69,18 @@ impl EventHandler for Receiver {
                 let new_quiet: Vec<_> = last_talking.difference(&current_talking).collect();
 
                 for user in new_talking {
-                    _ = self.inner.event_tx.send(EventMessage::Speaking(*user));
+                    _ = self.inner.event_tx.send(VoiceMessage { guild: self.inner.guild_id, event: EventMessage::Speaking(*user) } ).await;
                 }
 
                 for user in new_quiet {
-                    _ = self.inner.event_tx.send(EventMessage::Quiet(*user));
+                    _ = self.inner.event_tx.send(VoiceMessage { guild: self.inner.guild_id, event: EventMessage::Quiet(*user) } ).await;
                 }
 
                 *last_talking = current_talking;
             },
             Ctx::ClientDisconnect(ClientDisconnect { user_id, .. }) => {
                 debug!("Client disconnected: user {:?}", user_id);
-                _ = self.inner.event_tx.send(EventMessage::Disconnected(UserId::from(user_id.0)));
+                _ = self.inner.event_tx.send(VoiceMessage { guild: self.inner.guild_id, event: EventMessage::Disconnected(UserId::from(user_id.0)) } ).await;
             },
             _ => {
                 unimplemented!()
